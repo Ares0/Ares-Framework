@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)  
 @Target(ElementType.TYPE)
-public @interface Aspect {
+public @interface Controller {
 
 	String value() default "";
 	

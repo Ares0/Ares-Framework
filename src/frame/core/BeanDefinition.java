@@ -1,7 +1,10 @@
 package frame.core;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class BeanDefinition {
 
@@ -9,11 +12,21 @@ public class BeanDefinition {
 	
 	private Class<?> clazz;
 	
+	// 依赖class
 	private List<Class<?>> dependences;
 	
 	private boolean isAspect;
 	
+	// 切面表达式
 	private List<String> aspectExpressions;
+	
+	private boolean isController;
+	
+	// 请求路径-Method缓存
+	private Map<String, Method> requestMapping;
+	
+	// 方法-返回视图
+	private Map<Method, String> responseMapping;
 	
 	public String getName() {
 		return name;
@@ -59,6 +72,36 @@ public class BeanDefinition {
 			aspectExpressions = new ArrayList<>();
 		}
 		aspectExpressions.add(aspectExpression);
+	}
+
+	public boolean isController() {
+		return isController;
+	}
+
+	public void setController(boolean isController) {
+		this.isController = isController;
+	}
+
+	public Map<String, Method> getRequestMapping() {
+		return requestMapping;
+	}
+
+	public void setRequestMapping(String path, Method m) {
+		if (requestMapping == null) {
+			requestMapping = new HashMap<>();
+		}
+		this.requestMapping.put(path, m);
+	}
+
+	public Map<Method, String> getResponseMapping() {
+		return responseMapping;
+	}
+
+	public void setResponseMapping(Method m, String type) {
+		if (responseMapping == null) {
+			responseMapping = new HashMap<>();
+		}
+		this.responseMapping.put(m, type);
 	}
 	
 }

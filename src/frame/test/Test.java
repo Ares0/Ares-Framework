@@ -1,17 +1,9 @@
 package frame.test;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
 
 public class Test {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 //		for (Class<?> c : getClasses("frame")) {
 //			System.out.println(c);
 //		}
@@ -24,65 +16,46 @@ public class Test {
 		
 //		System.out.println("frame.test.Test.main".contains("Test"));
 		
-		System.out.println(Test.class.getDeclaredMethods()[0].getName());
+//		System.out.println(Test.class.getDeclaredMethods()[0].getName());
+		
+		Test t = new Test();
+		t.testJavaReflect(); // 20ms
+		t.testAsmReflect();  // 29ms
 		
 	}
 	
-	public static List<Class<?>> getClasses(String packageName){  
-        List<Class<?>> classes = new ArrayList<Class<?>>();  
-        
-        String packageDirName = packageName.replace('.', '/');  
-        Enumeration<URL> dirs;  
-        
-        try {  
-            dirs = Thread.currentThread().getContextClassLoader().getResources(packageDirName);  
-            while (dirs.hasMoreElements()){  
-                URL url = dirs.nextElement();  
-                String protocol = url.getProtocol();  
-                //如果是以文件的形式保存在服务器上  
-                if ("file".equals(protocol)) {  
-                    String filePath = URLDecoder.decode(url.getFile(), "UTF-8");  
-                    //以文件的方式扫描整个包下的文件 并添加到集合中  
-                    findAndAddClassesInPackageByFile(packageName, filePath, classes);  
-                } 
-            }  
-        } catch (IOException e) {  
-            e.printStackTrace();  
-        }  
-         
-        return classes;  
-    }  
+	private void testJavaReflect() throws Exception {
+//		Test tn = new Test();
+//		Class<Test> t = (Class<Test>) Class.forName("frame.test.Test");
+//		Method m = t.getMethod("getI", null);
+		
+		long now = System.currentTimeMillis();
+		for (int i = 0; i < 1000000; i++) {
+//			m.invoke(tn, null);
+		}
+		System.out.println(System.currentTimeMillis() - now);
+	}
 	
-	 public static void findAndAddClassesInPackageByFile(String packageName, String packagePath, List<Class<?>> classes){  
-        File dir = new File(packagePath);  
-        if (!dir.exists() || !dir.isDirectory()) {  
-            return;  
-        }  
-        
-        File[] dirfiles = dir.listFiles(new FileFilter() {  
-              public boolean accept(File file) {  
-                return (file.isDirectory()) || (file.getName().endsWith(".class"));  
-              }  
-            });  
-        
-        for (File file : dirfiles) {  
-            //如果是目录 则继续扫描  
-            if (file.isDirectory()) {  
-                findAndAddClassesInPackageByFile(packageName + "." + file.getName(),  
-                                      file.getAbsolutePath(), classes);  
-            }  
-            else {  
-                String className = file.getName().substring(0, file.getName().length() - 6);  
-                try {  
-                    classes.add(Class.forName(packageName + '.' + className));  
-                    
-                    System.out.println(className);
-                    
-                } catch (ClassNotFoundException e) {  
-                    e.printStackTrace();  
-                }  
-            }  
-        }  
-    }  
-
+	private void testAsmReflect() {
+//		Test tn = new Test();
+//		MethodAccess ma = MethodAccess.get(Test.class);
+//		int index = ma.getIndex("getI");
+//		
+//		long now = System.currentTimeMillis();
+//		for(int i = 0; i<1000000; i++){
+//		    ma.invoke(tn, index);
+//		}
+//		System.out.println(System.currentTimeMillis() - now);
+	}
+	
+	private int i;
+	
+	public int getI() {
+		return i;
+	}
+	
+	public void setI(int i) {
+		this.i = i;
+	}
+	
 }

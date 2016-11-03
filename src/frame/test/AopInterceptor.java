@@ -4,10 +4,8 @@ import java.lang.reflect.Method;
 
 import frame.aop.AbstractHandlerInterceptor;
 import frame.stereotype.Aspect;
-import frame.stereotype.Component;
 import frame.stereotype.Pointcut;
 
-@Component
 @Aspect
 public class AopInterceptor extends AbstractHandlerInterceptor {
 

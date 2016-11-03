@@ -2,6 +2,9 @@
 
 
 
-  0.2版本，实现aop功能。
+  0.3版本，实现mvc功能。
     
-  interceptor在BeanFactory初始化时就出现，不如在getObject需要时出现。
+  controller的路径映射，在resourceLoader还是在servletListener中初始化。
+  
+  mapping复杂可考虑重构到HandlerMapping，ViewResolver复杂可考虑重构为Factory，
+  由不同的resolver解析不同的视图。

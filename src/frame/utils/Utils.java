@@ -10,4 +10,7 @@ public class Utils {
 		return Thread.currentThread().getContextClassLoader();
 	}
 	
+	public static boolean isMatch(String sp, String sc) {
+		return sp.contains(sc);
+	}
 }

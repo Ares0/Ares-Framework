@@ -2,17 +2,18 @@ package frame.core;
 
 import frame.aop.DefaultFactoryBean;
 
-public class FileSystemBeanFactory extends AbstractBeanFactory {
+public class WebApplicationContext extends AbstractBeanFactory{
 
-	public FileSystemBeanFactory(String configLocation) {
+	public final static String SERVLETCONTEXT_BEANFACTORY = "webContext";
+	
+	public static final String CONFIG_PATH = "configPath";
+	
+	public WebApplicationContext(String configLocation) {
 		super(configLocation);
 	}
 	
 	protected String getConfigPath(String configLocation) {
-		String path = System.getProperty("user.dir").concat("\\src")
-				.concat("\\").concat(configLocation);	
-		path.replace("/", "\\");
-		return path;
+		return configLocation.replace("/", "\\");
 	}
 	
 	@Override
