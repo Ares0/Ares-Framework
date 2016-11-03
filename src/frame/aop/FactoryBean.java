@@ -6,4 +6,6 @@ public interface FactoryBean {
 
 	Object getObject(BeanDefinition bd);
 	
+	void initFactoryBean();
+	
 }

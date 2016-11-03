@@ -2,5 +2,6 @@
 
 
 
-    0.1版本，实现ioc功能，主要配置使用注解，
- 其他配置文件使用properties文件。
+  0.2版本，实现aop功能。
+    
+  interceptor在BeanFactory初始化时就出现，不如在getObject需要时出现。

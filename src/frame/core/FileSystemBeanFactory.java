@@ -12,23 +12,22 @@ import java.util.Properties;
 import frame.aop.DefaultFactoryBean;
 import frame.aop.FactoryBean;
 import frame.stereotype.Resource;
-import frame.utils.FileResourceLoader;
-import frame.utils.ResourceLoader;
 import frame.utils.Utils;
 
 public class FileSystemBeanFactory implements BeanFactory {
 
-	Properties config;
+	private Properties config;
 	
-	Map<String, BeanDefinition> beanDefinition;
+	private Map<String, BeanDefinition> beanNameDefinition;
 	
-	Map<Class<?>, BeanDefinition> beanClassDefinition;
+	// 持有相同的BeanDefinition地址
+	private Map<Class<?>, BeanDefinition> beanClassDefinition;
 	
-	ResourceLoader loader;
+	private ResourceLoader loader;
 	
-	FactoryBean factoryBean;
+	private FactoryBean factoryBean;
 	
-	Map<String, Object> beans;
+	private Map<String, Object> beans;
 	
 	public FileSystemBeanFactory(String configLocation) {
 		synchronized (this) {
@@ -37,8 +36,17 @@ public class FileSystemBeanFactory implements BeanFactory {
 			initBeanDefinitionClass();
 			
 			beans = new HashMap<>();
-			factoryBean = new DefaultFactoryBean();
+			factoryBean = new DefaultFactoryBean(this);
+			factoryBean.initFactoryBean(); // interceptor先出现
 		}
+	}
+
+	public Map<String, BeanDefinition> getBeanNameDefinition() {
+		return beanNameDefinition;
+	}
+
+	public Map<Class<?>, BeanDefinition> getBeanClassDefinition() {
+		return beanClassDefinition;
 	}
 
 	private void initConfig(String configLocation) {
@@ -58,12 +66,12 @@ public class FileSystemBeanFactory implements BeanFactory {
 	
 	private void loadBeanDefinition() {
 		loader = new FileResourceLoader();
-		beanDefinition = loader.loadResource(config.getProperty(SCANPACKAGE));
+		beanNameDefinition = loader.loadResource(config.getProperty(SCANPACKAGE));
 	}
 
 	private void initBeanDefinitionClass() {
 		beanClassDefinition = new HashMap<>();
-		for (Map.Entry<String, BeanDefinition> e : beanDefinition.entrySet()) {
+		for (Map.Entry<String, BeanDefinition> e : beanNameDefinition.entrySet()) {
 			BeanDefinition bd = e.getValue();
 			beanClassDefinition.put(bd.getBeanClass(), bd);
 		}
@@ -78,14 +86,14 @@ public class FileSystemBeanFactory implements BeanFactory {
 		}
 		
 		BeanDefinition bd;
-		if ((bd = beanDefinition.get(name)) != null) {
+		if ((bd = beanNameDefinition.get(name)) != null) {
 			bean = factoryBean.getObject(bd);
 			beans.put(name, bean);
 			
 			List<Class<?>> dbs = bd.getDependences();
 			if (dbs != null && dbs.size() > 0) {
 				for (Class<?> dc : dbs) {
-					beans.put(Utils.getBeanNameByClassName(dc.getName()), getBean(beanClassDefinition.get(dc).getName()));
+					beans.put(Utils.getLastNameByPeriod(dc.getName()), getBean(beanClassDefinition.get(dc).getName()));
 				}
 				doPropertyInject(bean);
 			}

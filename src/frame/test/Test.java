@@ -3,32 +3,28 @@ package frame.test;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
-import frame.stereotype.Component;
-import frame.stereotype.Resource;
-import frame.utils.Utils;
-
-@Component
 public class Test {
 
-	@Resource
-	private IOCResource r;
-	
 	public static void main(String[] args) {
 //		for (Class<?> c : getClasses("frame")) {
 //			System.out.println(c);
 //		}
-		for (Field f : Test.class.getDeclaredFields()) {
-			String typeName = f.getType().toString();
+//		
+//		for (Field f : Test.class.getDeclaredFields()) {
+//			String typeName = f.getType().toString();
 //			Object o = f.getType();
-			System.out.println(Utils.getBeanNameByClassName(typeName));
-		}
+//			System.out.println(f.getClass().toString());
+//		}
+		
+//		System.out.println("frame.test.Test.main".contains("Test"));
+		
+		System.out.println(Test.class.getDeclaredMethods()[0].getName());
 		
 	}
 	
