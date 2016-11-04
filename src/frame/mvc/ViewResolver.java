@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 import frame.stereotype.Component;
 
 /**
- *  ResponseData获取返回类型，支持jsp、json解析；
+ *  支持JSP、JSON解析；
  * 可能使用工厂模式，由不同的resolver解析。
  * */
 @Component
@@ -20,15 +20,15 @@ public class ViewResolver {
 	
 	private final static String VIEW_JSON = "JSON";
 	
-	public void resolve(String view, Object result, HttpServletRequest req, HttpServletResponse rep) {
-		if (view == null || view.equals("") || view.equals(VIEW_JSP)) {
-			resolveJsp(view, result, req, rep);
-		} else if (view.equals(VIEW_JSON)) {
-			resolveJson(view, result, req, rep);
+	public void resolve(String viewType, String viewPath, Object result, HttpServletRequest req, HttpServletResponse rep) {
+		if (viewType == null || viewType.equals("") || viewType.equals(VIEW_JSP)) {
+			resolveJsp(viewPath, result, req, rep);
+		} else if (viewType.equals(VIEW_JSON)) {
+			resolveJson(result, req, rep);
 		}
 	}
 
-	private void resolveJsp(String view, Object result,HttpServletRequest req, HttpServletResponse rep) {
+	private void resolveJsp(String viewPath, Object result,HttpServletRequest req, HttpServletResponse rep) {
 		if (result instanceof Model) {
 			Map<?, ?> rm = (Model)result;
 			for (Map.Entry<?, ?> e : rm.entrySet()) {
@@ -42,8 +42,8 @@ public class ViewResolver {
 		}
 		
 		String redirectPath = "";
-		if (!view.equals("")) {
-			redirectPath = view.concat(".jsp");
+		if (!viewPath.equals("")) {
+			redirectPath = viewPath.concat(".jsp");
 		} else if (result instanceof String) {
 			redirectPath = result.toString();
 		}
@@ -60,7 +60,7 @@ public class ViewResolver {
 		}
 	}
 
-	private void resolveJson(String view, Object result, HttpServletRequest req, HttpServletResponse rep) {
+	private void resolveJson(Object result, HttpServletRequest req, HttpServletResponse rep) {
 		if (result instanceof String) {
 			try {
 				String rs = (String)result;

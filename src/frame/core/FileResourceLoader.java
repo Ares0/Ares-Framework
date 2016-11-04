@@ -5,6 +5,7 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.Enumeration;
@@ -18,11 +19,30 @@ import frame.stereotype.Pointcut;
 import frame.stereotype.RequestMapping;
 import frame.stereotype.Resource;
 import frame.stereotype.ResponseData;
+import frame.stereotype.ResponseMapping;
 import frame.utils.Utils;
+import javassist.ClassClassPath;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtMethod;
+import javassist.Modifier;
+import javassist.NotFoundException;
+import javassist.bytecode.CodeAttribute;
+import javassist.bytecode.LocalVariableAttribute;
+import javassist.bytecode.MethodInfo;
 
 
 public class FileResourceLoader implements ResourceLoader {
 
+	private ClassPool pool;
+	
+	private Map<Class<?>, String> classPathMapping;
+	
+	FileResourceLoader() {
+		pool = ClassPool.getDefault();
+		classPathMapping = new HashMap<>();
+	}
+	
 	@Override
 	public Map<String, BeanDefinition> loadResource(String packagePath) {
 		return getBeanDefines(packagePath);
@@ -45,6 +65,9 @@ public class FileResourceLoader implements ResourceLoader {
                     addDependences(beanDefinitions);
                     addAspects(beanDefinitions);
                     addControllerPath(beanDefinitions);
+                    addControllerParameters(beanDefinitions);  
+                    
+                    classPathMapping.clear();
                 } 
             }  
         } catch (IOException e) {  
@@ -73,9 +96,13 @@ public class FileResourceLoader implements ResourceLoader {
             	try {  
             		String className = file.getName().substring(0, 
             				file.getName().length() - 6);  
-                	Class<?> beanClass = Class.forName(packageName.concat(".").concat(className));
-                	
+            		String classPath = packageName.concat(".").concat(className);
+            		
+                	Class<?> beanClass = Class.forName(classPath);
                 	String beanName = getComponentName(beanClass);
+                	
+                	classPathMapping.put(beanClass, classPath);
+                	
                 	if (beanName != null) {
                 		if (beanName.equals("")) {
                 			beanName = className;
@@ -158,21 +185,69 @@ public class FileResourceLoader implements ResourceLoader {
 				String classMapping = c.value();
 				
 				for (Method m : beanClass.getDeclaredMethods()) {
-					RequestMapping rm;
-					if ((rm = m.getAnnotation(RequestMapping.class)) != null) {
-						String methodMapping = classMapping.concat(rm.value());
+					RequestMapping reqMapping;
+					if ((reqMapping = m.getAnnotation(RequestMapping.class)) != null) {
+						String methodMapping = classMapping.concat(reqMapping.value());
 						if (!methodMapping.equals("")) {
 							m.setAccessible(true);
 							bd.setRequestMapping(methodMapping, m);
 						}
 					}
+					// view type
 					ResponseData rp;
 					if ((rp = m.getAnnotation(ResponseData.class)) != null) {
-						bd.setResponseMapping(m, rp.value());
+						bd.setResponseType(m, rp.value());
+					}
+					// view path
+					ResponseMapping repMapping;
+					if ((repMapping = m.getAnnotation(ResponseMapping.class)) != null) {
+						String viewPath = repMapping.value();
+						if (!viewPath.equals("")) {
+							bd.setResponseMapping(m, viewPath);
+						}
 					}
 				}
 			}
 		}
 	}
 
+	private void addControllerParameters(Map<String, BeanDefinition> beanDefinitions) {
+		try {  
+			for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
+				BeanDefinition bd = e.getValue();
+				Class<?> beanClass = bd.getBeanClass();
+				
+				Map<Method, Parameter[]> parameterMapping = new HashMap<>();
+				Map<Method, String[]> parameterNameMapping = new HashMap<>();
+				
+				if (beanClass.getAnnotation(Controller.class) != null) {
+					for (Method m : beanClass.getDeclaredMethods()) {
+						pool.insertClassPath(new ClassClassPath(this.getClass())); 
+						
+				        CtClass cc = pool.get(classPathMapping.get(beanClass));  
+				        CtMethod cm = cc.getDeclaredMethod(m.getName());  
+				  
+				        MethodInfo methodInfo = cm.getMethodInfo();  
+				        CodeAttribute codeAttribute = methodInfo.getCodeAttribute();  
+				        LocalVariableAttribute attr = (LocalVariableAttribute) codeAttribute.getAttribute(LocalVariableAttribute.tag);  
+
+				        String[] parameterNames = new String[cm.getParameterTypes().length];  
+				        int pos = Modifier.isStatic(cm.getModifiers()) ? 0 : 1;  
+				        for (int i = 0; i < parameterNames.length; i++) {
+				        	parameterNames[i] = attr.variableName(i + pos);
+				        }
+				        
+				        parameterMapping.put(m, m.getParameters());
+				        parameterNameMapping.put(m, parameterNames);
+					}
+					
+					bd.setParameterMapping(parameterMapping);
+					bd.setParameterNameMapping(parameterNameMapping);
+				}
+			}
+		} catch (NotFoundException ex) {  
+			ex.printStackTrace();  
+		}
+	}
+	
 }

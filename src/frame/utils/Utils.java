@@ -13,4 +13,8 @@ public class Utils {
 	public static boolean isMatch(String sp, String sc) {
 		return sp.contains(sc);
 	}
+	
+	public static String getFileSystemPath(String path) {
+		return path.replace("/", "\\");
+	}
 }

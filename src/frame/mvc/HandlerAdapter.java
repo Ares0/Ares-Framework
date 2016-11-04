@@ -12,34 +12,35 @@ import frame.core.WebApplicationContext;
 import frame.stereotype.Component;
 
 /**
- *  支持普通参数、req、rep的参数注入；
- * 不支持modelAndView，只支持注解方式。
+ *  支持普通参数、req、rep的参数注入。
  * */
 @Component
 public class HandlerAdapter {
 
-	public Object service(Object controller, Method cm, HttpServletRequest req, HttpServletResponse rep,
+	public Object service(Object controller, Method cm, Parameter[] parameters, 
+			String[] parameterNames, HttpServletRequest req, HttpServletResponse rep,
 			WebApplicationContext wc) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-		Parameter[] parameters = cm.getParameters();
-		
+
 		Object[] param = new Object[parameters.length];
-		Map<?, ?> reqParam = req.getParameterMap();
+		Map<String, String[]> reqParam = req.getParameterMap();
 		
-		int i = 0;
-		for (Parameter p : parameters) {
-			Object po = reqParam.get(p.getName());
-			if (po == null) {
-				param[i++] = getDefaultParameter(p);
+		for (int i = 0; i < Math.min(parameters.length, parameterNames.length); i++) {
+			Parameter p = parameters[i];
+			String[] values = reqParam.get(parameterNames[i]);
+			if (values == null) {
+				param[i] = getDefaultValue(p);
 			} else if (p.getType() == HttpServletRequest.class) {
-				param[i++] = req;
+				param[i] = req;
 			} else if (p.getType() == HttpServletResponse.class) {
-				param[i++] = rep;
+				param[i] = rep;
+			} else {
+				param[i] = getParameterValue(p, values);
 			}
 		}
 		return cm.invoke(controller, param);
 	}
 
-	private Object getDefaultParameter(Parameter p) {
+	private Object getDefaultValue(Parameter p) {
 		Class<?> type = p.getType();
 		if (type == char.class) {
 			return "";
@@ -55,6 +56,35 @@ public class HandlerAdapter {
 			return 0;
 		} else {
 			return null;
+		}
+	}
+	
+	private Object getParameterValue(Parameter p, String[] values) {
+		Class<?> type = p.getType();
+		
+		if (type == String.class) {
+			return values[0].toString();
+		} 
+		else if (type == char.class) {
+			return values[0];
+		} 
+		else if (type == byte.class) {
+			return Byte.parseByte(values[0].toString());
+		} 
+		else if (type == int.class) {
+			return Integer.parseInt(values[0].toString());
+		} 
+		else if (type == long.class) {
+			return Long.parseLong(values[0].toString());
+		} 
+		else if (type == float.class) {
+			return Float.parseFloat(values[0].toString());
+		} 
+		else if (type == double.class) {
+			return Double.parseDouble(values[0].toString());
+		} 
+		else {
+			return values;
 		}
 	}
 

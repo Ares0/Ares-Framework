@@ -1,6 +1,7 @@
 package frame.core;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,8 +26,17 @@ public class BeanDefinition {
 	// 请求路径-Method缓存
 	private Map<String, Method> requestMapping;
 	
+	// 方法-返回类型
+	private Map<Method, String> responseType;
+	
 	// 方法-返回视图
 	private Map<Method, String> responseMapping;
+	
+	// 方法-参数列表
+	private Map<Method, Parameter[]> parameterMapping;
+	
+	// 方法-参数名列表
+	private Map<Method, String[]> parameterNameMapping;
 	
 	public String getName() {
 		return name;
@@ -93,15 +103,42 @@ public class BeanDefinition {
 		this.requestMapping.put(path, m);
 	}
 
+	public Map<Method, String> getResponseType() {
+		return responseType;
+	}
+
+	public void setResponseType(Method m, String type) {
+		if (responseType == null) {
+			responseType = new HashMap<>();
+		}
+		this.responseType.put(m, type);
+	}
+
 	public Map<Method, String> getResponseMapping() {
 		return responseMapping;
 	}
-
+	
 	public void setResponseMapping(Method m, String type) {
 		if (responseMapping == null) {
 			responseMapping = new HashMap<>();
 		}
 		this.responseMapping.put(m, type);
+	}
+
+	public Map<Method, Parameter[]> getParameterMapping() {
+		return parameterMapping;
+	}
+
+	public void setParameterMapping(Map<Method, Parameter[]> parameterMapping) {
+		this.parameterMapping = parameterMapping;
+	}
+	
+	public Map<Method, String[]> getParameterNameMapping() {
+		return parameterNameMapping;
+	}
+	
+	public void setParameterNameMapping(Map<Method, String[]> parameterNameMapping) {
+		this.parameterNameMapping = parameterNameMapping;
 	}
 	
 }

@@ -2,8 +2,10 @@ package frame.mvc;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -19,9 +21,17 @@ public class DispatchServlet extends HttpServlet {
 
 	private static final long serialVersionUID = -945745153204232243L;
 	
+	public static final String CONTEXT_INIT = "contextInit";
+	
 	public static final String CONTROLLER_MAPPING = "controllerMapping";
 	
 	public static final String METHOD_MAPPING = "methodMapping";
+	
+	public static final String PARAMETER_MAPPING = "paramepterMapping";
+	
+	public static final String PARAMETER_NAME_MAPPING = "paramepterNameMapping";
+	
+	public static final String VIEW_TYPE = "viewType";
 	
 	public static final String VIEW_MAPPING = "viewMapping";
 	
@@ -42,27 +52,54 @@ public class DispatchServlet extends HttpServlet {
 			} 
 			
 			if ((wc = (WebApplicationContext) sc.getAttribute(wcn)) != null) {
-				Map<String, Method> methodMapping = new HashMap<>();
-				Map<String, String> controllerMapping = new HashMap<>();
-				Map<Method, String> viewMapping = new HashMap<>();
-				
-				for (Map.Entry<String, BeanDefinition> e : wc.getBeanNameDefinition().entrySet()) {
-					BeanDefinition bd = e.getValue();
-					if (bd.isController()) {
-						// req
-						for (Map.Entry<String, Method> m : bd.getRequestMapping().entrySet()) {
-							methodMapping.put(m.getKey(), m.getValue());
-							controllerMapping.put(m.getKey(), bd.getName());
-						}
-						// view
-						for (Map.Entry<Method, String> m : bd.getResponseMapping().entrySet()) {
-							viewMapping.put(m.getKey(), m.getValue());
+				Boolean init = (Boolean) sc.getAttribute(CONTEXT_INIT);
+				if (init == null || init == false) {
+					Map<String, String> controllerMapping = new HashMap<>();
+					
+					Map<String, Method> methodMapping = new HashMap<>();
+					Map<Method, Parameter[]> parameterMapping = new HashMap<>();
+					Map<Method, String[]> parameterNameMapping = new HashMap<>();
+					
+					Map<Method, String> viewType = new HashMap<>();
+					Map<Method, String> viewMapping = new HashMap<>();
+					
+					for (Map.Entry<String, BeanDefinition> e : wc.getBeanNameDefinition().entrySet()) {
+						BeanDefinition bd = e.getValue();
+						if (bd.isController()) {
+							// req
+							for (Map.Entry<String, Method> m : bd.getRequestMapping().entrySet()) {
+								methodMapping.put(m.getKey(), m.getValue());
+								controllerMapping.put(m.getKey(), bd.getName());
+							}
+							// param type
+							for (Entry<Method, Parameter[]> m : bd.getParameterMapping().entrySet()) {
+								parameterMapping.put(m.getKey(), m.getValue());
+							}
+							// param name
+							for (Entry<Method, String[]> m : bd.getParameterNameMapping().entrySet()) {
+								parameterNameMapping.put(m.getKey(), m.getValue());
+							}
+							// view type
+							for (Map.Entry<Method, String> m : bd.getResponseType().entrySet()) {
+								viewType.put(m.getKey(), m.getValue());
+							}
+							// view path
+							for (Map.Entry<Method, String> m : bd.getResponseMapping().entrySet()) {
+								viewMapping.put(m.getKey(), m.getValue());
+							}
 						}
 					}
+					
+					sc.setAttribute(METHOD_MAPPING, methodMapping);
+					sc.setAttribute(PARAMETER_MAPPING, parameterMapping);
+					sc.setAttribute(PARAMETER_NAME_MAPPING, parameterNameMapping);
+					
+					sc.setAttribute(CONTROLLER_MAPPING, controllerMapping);
+					sc.setAttribute(VIEW_TYPE, viewType);
+					sc.setAttribute(VIEW_MAPPING, viewMapping);
+					
+					sc.setAttribute(CONTEXT_INIT, true);
 				}
-				sc.setAttribute(METHOD_MAPPING, methodMapping);
-				sc.setAttribute(CONTROLLER_MAPPING, controllerMapping);
-				sc.setAttribute(VIEW_MAPPING, viewMapping);
 			}
 		}
 	}
@@ -94,8 +131,13 @@ public class DispatchServlet extends HttpServlet {
 				Method cm = methodMapping.get(path);
 				
 				if (cm != null) {
-					String view = ((Map<Method, String>) sc.getAttribute(VIEW_MAPPING)).get(cm);
-					doService(controller, cm, view, req, rep, wc);
+					String viewType = ((Map<Method, String>) sc.getAttribute(VIEW_TYPE)).get(cm);
+					String viewPath = ((Map<Method, String>) sc.getAttribute(VIEW_MAPPING)).get(cm);
+					
+					Parameter[] parameters = ((Map<Method, Parameter[]>) sc.getAttribute(PARAMETER_MAPPING)).get(cm);
+					String[] parameterNames = ((Map<Method, String[]>) sc.getAttribute(PARAMETER_NAME_MAPPING)).get(cm);
+					
+					doService(controller, cm, parameters, parameterNames, viewType, viewPath, req, rep, wc);
 				}
 			}
 		}
@@ -111,16 +153,17 @@ public class DispatchServlet extends HttpServlet {
 		return url;
 	}
 	
-	private void doService(Object controller, Method cm, 
-			String view, HttpServletRequest req, HttpServletResponse rep, WebApplicationContext wc) {
+	private void doService(Object controller, Method cm, Parameter[] parameters, 
+			String[] parameterNames, String viewType, String viewPath, 
+			HttpServletRequest req, HttpServletResponse rep, WebApplicationContext wc) {
 		HandlerAdapter ha = (HandlerAdapter) wc.getBean(HANDLER_ADAPTER);
 
 		try {
 			Object result;
-			result = ha.service(controller, cm, req, rep, wc);
+			result = ha.service(controller, cm, parameters, parameterNames, req, rep, wc);
 			
 			ViewResolver vr = (ViewResolver) wc.getBean(VIEW_RESOLVER);
-			vr.resolve(view, result, req, rep);
+			vr.resolve(viewType, viewPath, result, req, rep);
 		} catch (Exception e) {
 			e.printStackTrace();
 		} 
