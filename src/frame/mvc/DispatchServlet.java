@@ -114,8 +114,7 @@ public class DispatchServlet extends HttpServlet {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	protected void service(HttpServletRequest req,
-			HttpServletResponse rep) throws ServletException, IOException {
+	protected void service(HttpServletRequest req, HttpServletResponse rep) throws ServletException, IOException {
 		String path = getRequestPath(req);
 		ServletContext sc = req.getSession().getServletContext();
 		
@@ -154,13 +153,13 @@ public class DispatchServlet extends HttpServlet {
 	}
 	
 	private void doService(Object controller, Method cm, Parameter[] parameters, 
-			String[] parameterNames, String viewType, String viewPath, 
-			HttpServletRequest req, HttpServletResponse rep, WebApplicationContext wc) {
+			String[] parameterNames, String viewType, String viewPath, HttpServletRequest req,
+		    HttpServletResponse rep, WebApplicationContext wc) {
 		HandlerAdapter ha = (HandlerAdapter) wc.getBean(HANDLER_ADAPTER);
 
 		try {
 			Object result;
-			result = ha.service(controller, cm, parameters, parameterNames, req, rep, wc);
+			result = ha.handle(controller, cm, parameters, parameterNames, req, rep, wc);
 			
 			ViewResolver vr = (ViewResolver) wc.getBean(VIEW_RESOLVER);
 			vr.resolve(viewType, viewPath, result, req, rep);

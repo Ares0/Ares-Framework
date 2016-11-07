@@ -42,10 +42,10 @@ public class ViewResolver {
 		}
 		
 		String redirectPath = "";
-		if (!viewPath.equals("")) {
+		if (viewPath != null && !viewPath.equals("")) {
 			redirectPath = viewPath.concat(".jsp");
 		} else if (result instanceof String) {
-			redirectPath = result.toString();
+			redirectPath = result.toString().concat(".jsp");
 		}
 		
 		try {

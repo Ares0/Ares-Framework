@@ -17,7 +17,7 @@ import frame.stereotype.Component;
 @Component
 public class HandlerAdapter {
 
-	public Object service(Object controller, Method cm, Parameter[] parameters, 
+	public Object handle(Object controller, Method cm, Parameter[] parameters, 
 			String[] parameterNames, HttpServletRequest req, HttpServletResponse rep,
 			WebApplicationContext wc) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 

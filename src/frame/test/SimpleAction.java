@@ -21,4 +21,10 @@ public class SimpleAction {
 		return "{" + id + ", " +name +"}";
 	}
 	
+	@RequestMapping("/jsp2.do")
+	@ResponseData("JSP")
+	public String getJsp2(int id, String name) {
+		return "/WEB-INF/jsp/hello";
+	}
+	
 }
