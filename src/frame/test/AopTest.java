@@ -1,6 +1,6 @@
 package frame.test;
 
-import frame.core.FileSystemBeanFactory;
+import frame.core.support.FileSystemBeanFactory;
 
 public class AopTest {
 

@@ -1,5 +1,6 @@
 package frame.core;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
@@ -13,8 +14,16 @@ public class BeanDefinition {
 	
 	private Class<?> clazz;
 	
+	private boolean isSingleton;
+	
+	// resource
+	private List<Field> resourceFields;
+	
 	// 依赖class
 	private List<Class<?>> dependences;
+	
+	// 级别
+	private int level;
 	
 	private boolean isAspect;
 	
@@ -38,6 +47,9 @@ public class BeanDefinition {
 	// 方法-参数名列表
 	private Map<Method, String[]> parameterNameMapping;
 	
+	// singleton
+	public static final String SCOPE_SINGLETON = "singleton";
+	
 	public String getName() {
 		return name;
 	}
@@ -54,6 +66,25 @@ public class BeanDefinition {
 		this.clazz = clazz;
 	}
 
+	public boolean isSingleton() {
+		return isSingleton;
+	}
+
+	public void setSingleton(boolean isSingleton) {
+		this.isSingleton = isSingleton;
+	}
+
+	public List<Field> getResourceFields() {
+		return resourceFields;
+	}
+
+	public void setResourceFields(Field field) {
+		if (resourceFields == null) {
+			resourceFields = new ArrayList<>();
+		}
+		resourceFields.add(field);
+	}
+
 	public List<Class<?>> getDependences() {
 		return dependences;
 	}
@@ -63,6 +94,14 @@ public class BeanDefinition {
 			dependences = new ArrayList<>();
 		}
 		dependences.add(dependence);
+	}
+
+	public int getLevel() {
+		return level;
+	}
+
+	public void setLevel(int level) {
+		this.level = level;
 	}
 
 	public boolean isAspect() {

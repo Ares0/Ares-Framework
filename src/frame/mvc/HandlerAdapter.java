@@ -8,7 +8,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import frame.core.WebApplicationContext;
+import frame.core.support.WebApplicationContext;
 import frame.stereotype.Component;
 
 /**
@@ -16,6 +16,16 @@ import frame.stereotype.Component;
  * */
 @Component
 public class HandlerAdapter {
+	
+	public static final String CONTROLLER_MAPPING = "controllerMapping";
+	
+	public static final String METHOD_MAPPING = "methodMapping";
+	
+	public static final String PARAMETER_MAPPING = "paramepterMapping";
+	
+	public static final String PARAMETER_NAME_MAPPING = "paramepterNameMapping";
+	
+	public static final String HANDLER_ADAPTER = "HandlerAdapter";
 
 	public Object handle(Object controller, Method cm, Parameter[] parameters, 
 			String[] parameterNames, HttpServletRequest req, HttpServletResponse rep,

@@ -2,12 +2,14 @@ package frame.aop;
 
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import frame.core.BeanDefinition;
 import frame.core.BeanFactory;
+import frame.core.BeanWrapper;
 import frame.utils.Utils;
 
 public class DefaultFactoryBean implements FactoryBean {
@@ -20,7 +22,9 @@ public class DefaultFactoryBean implements FactoryBean {
 		this.bf = b;
 		interceptors = new HashMap<>();
 	}
-	
+	/*
+	 * load interceptors
+	 */
 	public void initFactoryBean() {
 		for (Map.Entry<String, BeanDefinition> e : bf.getBeanNameDefinition().entrySet()) {
 			BeanDefinition bd = e.getValue();
@@ -40,33 +44,51 @@ public class DefaultFactoryBean implements FactoryBean {
 	}
 	
 	@Override
-	public Object getObject(BeanDefinition bd) {
-		List<HandlerInterceptor> his = getObjectInterceptors(bd);
+	public BeanWrapper getObject(BeanDefinition bd) {
+		BeanWrapper bw = null;
 		try {
+			Object instance = bd.getBeanClass().newInstance();
+			List<HandlerInterceptor> his = getObjectInterceptors(bd);
+			
 			if (his == null) {
-				return bd.getBeanClass().newInstance();
-			} else {
-				// 只装载匹配的类 hi
-				AopProxy proxy = new AopProxy(bd.getBeanClass().newInstance(), his);  
-				return Proxy.newProxyInstance(Utils.getCurrentClassLoader(), bd.getBeanClass().getInterfaces(), proxy);
+				bw = new BeanWrapper();
+				bw.setBean(instance);
+				bw.setInstance(instance);
+			} 
+			else {
+				AopProxy proxy = new AopProxy(instance, his);  
+				Object object =  Proxy.newProxyInstance(Utils.getCurrentClassLoader(), bd.getBeanClass().getInterfaces(), proxy);
+				bw = new BeanWrapper();
+				bw.setBean(object);
+				bw.setInstance(instance);
 			}
 		} catch (InstantiationException e) {
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
 			e.printStackTrace();
 		} 
-		return null;
+		return bw;
 	}
 
 	private List<HandlerInterceptor> getObjectInterceptors(BeanDefinition bd) {
+		boolean order = false;
 		List<HandlerInterceptor> his = null;
+		
 		for (Map.Entry<String, HandlerInterceptor> e : interceptors.entrySet()) {
-			// 是否匹配当前类
-			if (e.getValue().isMatchClass(bd.getName())) {
-				if (his == null) 
+			HandlerInterceptor hi = e.getValue();
+			if (hi.isMatchClass(bd.getName())) {
+				if (bf.getBeanClassDefinition().get(hi.getClass()).getLevel() != 0) {
+					order = true;
+				}
+				if (his == null) {
 					his = new ArrayList<>();
-				his.add(e.getValue());
+				}
+				his.add(hi);
 			}
+		}
+		
+		if (order) {
+			Collections.sort(his);
 		}
 		return his;
 	}

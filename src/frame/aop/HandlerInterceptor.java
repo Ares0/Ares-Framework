@@ -3,11 +3,9 @@ package frame.aop;
 import java.lang.reflect.Method;
 import java.util.List;
 
-public interface HandlerInterceptor {
+public interface HandlerInterceptor extends Comparable<HandlerInterceptor>{
 
 	boolean isMatchClass(String expr);
-
-	void invoke(Object target, Method method, Object[] args);
 
 	boolean isMatchBefore(String string);
 
@@ -18,5 +16,9 @@ public interface HandlerInterceptor {
 	void invokeBefore(Object target, Method method, Object[] args);
 
 	void invokeAfter(Object target, Method method, Object[] args);
+	
+	int getInterceptorLevel();
+	
+	void setInterceptorLevel(int level);
 	
 }

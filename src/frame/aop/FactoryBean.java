@@ -1,10 +1,11 @@
 package frame.aop;
 
 import frame.core.BeanDefinition;
+import frame.core.BeanWrapper;
 
 public interface FactoryBean {
 
-	Object getObject(BeanDefinition bd);
+	BeanWrapper getObject(BeanDefinition bd);
 	
 	void initFactoryBean();
 	

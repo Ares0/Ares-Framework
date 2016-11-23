@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?><project-modules id="moduleCoreId" project-version="1.5.0">
-    <wb-module deploy-name="pressure">
+    <wb-module deploy-name="Ares Framework">
         <wb-resource deploy-path="/" source-path="/WebContent" tag="defaultRootSource"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/src"/>
-        <property name="context-root" value="pressure"/>
-        <property name="java-output-path" value="/pressure/build/classes"/>
+        <property name="java-output-path" value="/Ares Framework/build/classes"/>
+        <property name="context-root" value="Ares Framework"/>
     </wb-module>
 </project-modules>

@@ -15,11 +15,13 @@ import java.util.Map;
 import frame.stereotype.Aspect;
 import frame.stereotype.Component;
 import frame.stereotype.Controller;
+import frame.stereotype.Order;
 import frame.stereotype.Pointcut;
 import frame.stereotype.RequestMapping;
 import frame.stereotype.Resource;
 import frame.stereotype.ResponseData;
 import frame.stereotype.ResponseMapping;
+import frame.stereotype.Scope;
 import frame.utils.Utils;
 import javassist.ClassClassPath;
 import javassist.ClassPool;
@@ -31,14 +33,13 @@ import javassist.bytecode.CodeAttribute;
 import javassist.bytecode.LocalVariableAttribute;
 import javassist.bytecode.MethodInfo;
 
-
 public class FileResourceLoader implements ResourceLoader {
 
 	private ClassPool pool;
 	
 	private Map<Class<?>, String> classPathMapping;
 	
-	FileResourceLoader() {
+	public FileResourceLoader() {
 		pool = ClassPool.getDefault();
 		classPathMapping = new HashMap<>();
 	}
@@ -48,6 +49,9 @@ public class FileResourceLoader implements ResourceLoader {
 		return getBeanDefines(packagePath);
 	}
 	
+	/*
+	 * bean define
+	 */
 	public Map<String, BeanDefinition> getBeanDefines(String packagePath){  
 		Enumeration<URL> dirs;  
 		String packageDir = packagePath.replace('.', '/');  
@@ -58,25 +62,25 @@ public class FileResourceLoader implements ResourceLoader {
             while (dirs.hasMoreElements()){  
                 URL url = dirs.nextElement();  
                 String protocol = url.getProtocol();  
+
                 if ("file".equals(protocol)) {  
                     String filePath = URLDecoder.decode(url.getFile(), "UTF-8");  
-                    
-                    addClass(packagePath, filePath, beanDefinitions);
-                    addDependences(beanDefinitions);
-                    addAspects(beanDefinitions);
-                    addControllerPath(beanDefinitions);
-                    addControllerParameters(beanDefinitions);  
-                    
-                    classPathMapping.clear();
+                    resolveClass(packagePath, filePath, beanDefinitions);
                 } 
             }  
         } catch (IOException e) {  
             e.printStackTrace();  
         }  
+        
+        resolveBeanDefinition(beanDefinitions);  
+        release();
         return beanDefinitions;  
-    }  
+    }
 
-	private void addClass(String packageName, String packagePath, Map<String, BeanDefinition> beanDefinitions){  
+    /*
+     * class loading
+     */
+	private void resolveClass(String packageName, String packagePath, Map<String, BeanDefinition> beanDefinitions){  
         File dir = new File(packagePath);  
         if (!dir.exists() || !dir.isDirectory()) {  
             return;  
@@ -90,19 +94,19 @@ public class FileResourceLoader implements ResourceLoader {
         
         for (File file : dirfiles) {  
             if (file.isDirectory()) {  
-                addClass(packageName.concat(".").concat(file.getName()), 
+                resolveClass(packageName.concat(".").concat(file.getName()), 
                 		file.getAbsolutePath(), beanDefinitions);  
-            } else {  
+            } 
+            else {  
             	try {  
             		String className = file.getName().substring(0, 
             				file.getName().length() - 6);  
             		String classPath = packageName.concat(".").concat(className);
             		
                 	Class<?> beanClass = Class.forName(classPath);
-                	String beanName = getComponentName(beanClass);
-                	
                 	classPathMapping.put(beanClass, classPath);
                 	
+                	String beanName = getComponentName(beanClass);
                 	if (beanName != null) {
                 		if (beanName.equals("")) {
                 			beanName = className;
@@ -119,6 +123,19 @@ public class FileResourceLoader implements ResourceLoader {
         }  
     }
 
+	/*
+     * resolve bean definition
+     */
+	private void resolveBeanDefinition(Map<String, BeanDefinition> beanDefinitions) {
+		resolveBeanFields(beanDefinitions);
+		resolveScope(beanDefinitions);
+        resolveDependences(beanDefinitions);
+        
+        resolveAspects(beanDefinitions);
+        resolveControllerPath(beanDefinitions);
+        resolveControllerParameters(beanDefinitions);
+	}
+	
 	private String getComponentName(Class<?> beanClass) {
 		Component cop;
 		Aspect asp;
@@ -134,8 +151,42 @@ public class FileResourceLoader implements ResourceLoader {
 			return null;
 		}
 	}
-
-	private void addDependences(Map<String, BeanDefinition> beanDefinitions) {
+	
+	private void release() {
+		pool = null;
+		classPathMapping.clear();
+		classPathMapping = null;
+	}  
+	
+	// bean fields
+	private void resolveBeanFields(Map<String, BeanDefinition> beanDefinitions) {
+		for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
+			BeanDefinition bd = e.getValue();
+			Class<?> beanClass = bd.getBeanClass();
+			
+			for (Field f : beanClass.getDeclaredFields()) {
+				if ((f.getAnnotation(Resource.class)) != null) {
+					bd.setResourceFields(f);
+				}
+			}
+		}
+	}
+	
+	// scope
+	private void resolveScope(Map<String, BeanDefinition> beanDefinitions) {
+		for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
+			BeanDefinition bd = e.getValue();
+			Class<?> beanClass = bd.getBeanClass();
+			
+			Scope s = beanClass.getAnnotation(Scope.class);
+			if (s != null && s.value().equals(BeanDefinition.SCOPE_SINGLETON)) {
+				bd.setSingleton(true);
+			}
+		}
+	}
+	
+	// dependences
+	private void resolveDependences(Map<String, BeanDefinition> beanDefinitions) {
 		for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
 			BeanDefinition bd = e.getValue();
 			Class<?> beanClass = bd.getBeanClass();
@@ -144,20 +195,21 @@ public class FileResourceLoader implements ResourceLoader {
 				Resource r;
 				if ((r = f.getAnnotation(Resource.class)) != null) {
 					String beanName;
-            		if ((beanName = r.value()).equals("")) {
-            			beanName = Utils.getLastNameByPeriod(f.getType().toString());
-            		}
-            		
-            		BeanDefinition dp;   
-            		if ((dp = beanDefinitions.get(beanName)) != null) {
-            			bd.setDependences(dp.getBeanClass());
-            		}
+					if ((beanName = r.value()).equals("")) {
+						beanName = Utils.getLastNameByPeriod(f.getType().toString());
+					}
+					
+					BeanDefinition dp;   
+					if ((dp = beanDefinitions.get(beanName)) != null) {
+						bd.setDependences(dp.getBeanClass());
+					}
 				}
 			}
 		}
 	}
 
-	private void addAspects(Map<String, BeanDefinition> beanDefinitions) {
+	// aspects
+	private void resolveAspects(Map<String, BeanDefinition> beanDefinitions) {
 		for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
 			BeanDefinition bd = e.getValue();
 			Class<?> beanClass = bd.getBeanClass();
@@ -170,11 +222,15 @@ public class FileResourceLoader implements ResourceLoader {
 						bd.setAspectExpression(pc.value());
 					}
 				}
+				
+				Order od = beanClass.getAnnotation(Order.class);
+				bd.setLevel(od == null ? 0 : od.value());
 			}
 		}
 	}
 	
-	private void addControllerPath(Map<String, BeanDefinition> beanDefinitions) {
+	// controller path
+	private void resolveControllerPath(Map<String, BeanDefinition> beanDefinitions) {
 		for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
 			BeanDefinition bd = e.getValue();
 			Class<?> beanClass = bd.getBeanClass();
@@ -211,7 +267,8 @@ public class FileResourceLoader implements ResourceLoader {
 		}
 	}
 
-	private void addControllerParameters(Map<String, BeanDefinition> beanDefinitions) {
+	// controller method path
+	private void resolveControllerParameters(Map<String, BeanDefinition> beanDefinitions) {
 		try {  
 			for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
 				BeanDefinition bd = e.getValue();
@@ -233,6 +290,7 @@ public class FileResourceLoader implements ResourceLoader {
 
 				        String[] parameterNames = new String[cm.getParameterTypes().length];  
 				        int pos = Modifier.isStatic(cm.getModifiers()) ? 0 : 1;  
+				        
 				        for (int i = 0; i < parameterNames.length; i++) {
 				        	parameterNames[i] = attr.variableName(i + pos);
 				        }

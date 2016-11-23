@@ -4,10 +4,20 @@ import java.util.List;
 
 import frame.utils.Utils;
 
-public abstract class AbstractHandlerInterceptor implements HandlerInterceptor{
+public abstract class AbstractHandlerInterceptor implements HandlerInterceptor {
 
+	private int level;
+	
 	private List<String> aspectExpression;
 	
+	public int getInterceptorLevel() {
+		return level;
+	}
+
+	public void setInterceptorLevel(int level) {
+		this.level = level;
+	}
+
 	public List<String> getAspectExpression() {
 		return aspectExpression;
 	}
@@ -40,4 +50,9 @@ public abstract class AbstractHandlerInterceptor implements HandlerInterceptor{
 		return false;
 	}
 
+	@Override
+	public int compareTo(HandlerInterceptor hi) {
+		return this.level - hi.getInterceptorLevel();
+	}
+	
 }

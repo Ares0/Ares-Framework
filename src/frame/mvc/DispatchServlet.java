@@ -15,29 +15,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import frame.core.BeanDefinition;
-import frame.core.WebApplicationContext;
+import frame.core.support.WebApplicationContext;
 
 public class DispatchServlet extends HttpServlet {
 
 	private static final long serialVersionUID = -945745153204232243L;
 	
 	public static final String CONTEXT_INIT = "contextInit";
-	
-	public static final String CONTROLLER_MAPPING = "controllerMapping";
-	
-	public static final String METHOD_MAPPING = "methodMapping";
-	
-	public static final String PARAMETER_MAPPING = "paramepterMapping";
-	
-	public static final String PARAMETER_NAME_MAPPING = "paramepterNameMapping";
-	
-	public static final String VIEW_TYPE = "viewType";
-	
-	public static final String VIEW_MAPPING = "viewMapping";
-	
-	public static final String HANDLER_ADAPTER = "HandlerAdapter";
-	
-	public static final String VIEW_RESOLVER = "ViewResolver";
 	
 	@Override
 	public void init(ServletConfig config) throws ServletException {
@@ -90,13 +74,13 @@ public class DispatchServlet extends HttpServlet {
 						}
 					}
 					
-					sc.setAttribute(METHOD_MAPPING, methodMapping);
-					sc.setAttribute(PARAMETER_MAPPING, parameterMapping);
-					sc.setAttribute(PARAMETER_NAME_MAPPING, parameterNameMapping);
+					sc.setAttribute(HandlerAdapter.METHOD_MAPPING, methodMapping);
+					sc.setAttribute(HandlerAdapter.PARAMETER_MAPPING, parameterMapping);
+					sc.setAttribute(HandlerAdapter.PARAMETER_NAME_MAPPING, parameterNameMapping);
 					
-					sc.setAttribute(CONTROLLER_MAPPING, controllerMapping);
-					sc.setAttribute(VIEW_TYPE, viewType);
-					sc.setAttribute(VIEW_MAPPING, viewMapping);
+					sc.setAttribute(HandlerAdapter.CONTROLLER_MAPPING, controllerMapping);
+					sc.setAttribute(ViewResolver.VIEW_TYPE, viewType);
+					sc.setAttribute(ViewResolver.VIEW_MAPPING, viewMapping);
 					
 					sc.setAttribute(CONTEXT_INIT, true);
 				}
@@ -118,7 +102,7 @@ public class DispatchServlet extends HttpServlet {
 		String path = getRequestPath(req);
 		ServletContext sc = req.getSession().getServletContext();
 		
-		Map<String, String> controllerMapping = (Map<String, String>) sc.getAttribute(CONTROLLER_MAPPING);
+		Map<String, String> controllerMapping = (Map<String, String>) sc.getAttribute(HandlerAdapter.CONTROLLER_MAPPING);
 		
 		String controllerName;
 		if ((controllerName = controllerMapping.get(path)) != null) {
@@ -126,15 +110,15 @@ public class DispatchServlet extends HttpServlet {
 			Object controller;
 			
 			if ((controller = wc.getBean(controllerName)) != null) {
-				Map<String, Method> methodMapping = (Map<String, Method>) sc.getAttribute(METHOD_MAPPING);
+				Map<String, Method> methodMapping = (Map<String, Method>) sc.getAttribute(HandlerAdapter.METHOD_MAPPING);
 				Method cm = methodMapping.get(path);
 				
 				if (cm != null) {
-					String viewType = ((Map<Method, String>) sc.getAttribute(VIEW_TYPE)).get(cm);
-					String viewPath = ((Map<Method, String>) sc.getAttribute(VIEW_MAPPING)).get(cm);
+					String viewType = ((Map<Method, String>) sc.getAttribute(ViewResolver.VIEW_TYPE)).get(cm);
+					String viewPath = ((Map<Method, String>) sc.getAttribute(ViewResolver.VIEW_MAPPING)).get(cm);
 					
-					Parameter[] parameters = ((Map<Method, Parameter[]>) sc.getAttribute(PARAMETER_MAPPING)).get(cm);
-					String[] parameterNames = ((Map<Method, String[]>) sc.getAttribute(PARAMETER_NAME_MAPPING)).get(cm);
+					Parameter[] parameters = ((Map<Method, Parameter[]>) sc.getAttribute(HandlerAdapter.PARAMETER_MAPPING)).get(cm);
+					String[] parameterNames = ((Map<Method, String[]>) sc.getAttribute(HandlerAdapter.PARAMETER_NAME_MAPPING)).get(cm);
 					
 					doService(controller, cm, parameters, parameterNames, viewType, viewPath, req, rep, wc);
 				}
@@ -155,14 +139,14 @@ public class DispatchServlet extends HttpServlet {
 	private void doService(Object controller, Method cm, Parameter[] parameters, 
 			String[] parameterNames, String viewType, String viewPath, HttpServletRequest req,
 		    HttpServletResponse rep, WebApplicationContext wc) {
-		HandlerAdapter ha = (HandlerAdapter) wc.getBean(HANDLER_ADAPTER);
+		HandlerAdapter ha = (HandlerAdapter) wc.getBean(HandlerAdapter.HANDLER_ADAPTER);
 
 		try {
 			Object result;
 			result = ha.handle(controller, cm, parameters, parameterNames, req, rep, wc);
 			
-			ViewResolver vr = (ViewResolver) wc.getBean(VIEW_RESOLVER);
-			vr.resolve(viewType, viewPath, result, req, rep);
+			ViewResolver vr = (ViewResolver) wc.getBean(ViewResolverFactory.getViewResolverSign(viewType));
+			vr.resolve(viewPath, result, req, rep);
 		} catch (Exception e) {
 			e.printStackTrace();
 		} 
