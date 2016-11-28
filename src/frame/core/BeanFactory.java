@@ -8,6 +8,8 @@ public interface BeanFactory {
 	
 	Object getBean(String name);
 	
+	Object getBean(Class<?> beanClass);
+	
 	Map<String, BeanDefinition> getBeanNameDefinition();
 	
 	Map<Class<?>, BeanDefinition> getBeanClassDefinition();

@@ -12,9 +12,11 @@ import java.util.Properties;
 import frame.aop.FactoryBean;
 import frame.core.BeanDefinition;
 import frame.core.BeanFactory;
+import frame.core.BeanKey;
 import frame.core.BeanWrapper;
 import frame.core.FileResourceLoader;
 import frame.core.ResourceLoader;
+
 
 public abstract class AbstractBeanFactory implements BeanFactory {
 
@@ -22,14 +24,18 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 	
 	private Map<String, BeanDefinition> beanNameDefinition;
 	
-	// 持有相同的BeanDefinition地址
+	// 鎸佹湁鐩稿悓鐨凚eanDefinition鍦板潃
 	private Map<Class<?>, BeanDefinition> beanClassDefinition;
 	
 	private ResourceLoader loader;
 	
 	protected FactoryBean factoryBean;
 	
-	private Map<String, BeanWrapper> beans;
+	private Map<BeanKey, BeanWrapper> beans;
+	
+	private final static int INJECTBYNAME = 1;
+	
+	private final static int INJECTBYTYPE = 2;
 	
 	public AbstractBeanFactory(String configLocation) {
 		synchronized (this) {
@@ -82,32 +88,60 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 	
 	@Override
 	public Object getBean(String name) {
-		BeanDefinition bd = beanNameDefinition.get(name);
+		return this.getBean(getBeanKey(name));
+	}
+	
+	@Override
+	public Object getBean(Class<?> beanClass) {
+		return this.getBean(getBeanKey(beanClass));
+	}
+	
+	protected Object getBean(BeanKey key) {
+		String name;
+		Class<?> beanClass;
+		BeanDefinition bd = null;
+		int type = INJECTBYNAME;
+		
+		if ((name = key.getName()) != null) {
+			bd = beanNameDefinition.get(name);
+		} else if ((beanClass = key.getBeanClass()) != null) {
+			type = INJECTBYTYPE;
+			bd = beanClassDefinition.get(beanClass);
+		}
 		
 		if (bd == null) {
 			throw new IllegalArgumentException();
 		}
 		
 		BeanWrapper bw;
-		if (bd.isSingleton() || (bw = beans.get(name)) == null) {
+		if (bd.isSingleton() || (bw = beans.get(key)) == null) {
 			bw = factoryBean.getObject(bd);
-			beans.put(name, bw);
+			beans.put(key, bw);
 			
 			List<Class<?>> dbs = bd.getDependences();
 			if (dbs != null && dbs.size() > 0) {
 				for (Class<?> dc : dbs) {
 					getBean(beanClassDefinition.get(dc).getName());
 				}
-				doPropertyInject(bd, bw);
+				doPropertyInject(bd, bw, type);
 			}
 		} 
 		return bw.getBean();
 	}
+	
+	public BeanKey getBeanKey(String name) {
+		return new BeanKey(name);
+	}
+	
+	public BeanKey getBeanKey(Class<?> beanClass) {
+		return new BeanKey(beanClass);
+	}
 
-	private void doPropertyInject(BeanDefinition bd, BeanWrapper bw) {
+	private void doPropertyInject(BeanDefinition bd, BeanWrapper bw, int type) {
 		for (Field f : bd.getResourceFields()) {
 			if ((bd = beanClassDefinition.get(f.getType())) != null) {
-				BeanWrapper db = beans.get(bd.getName());
+				BeanWrapper db;
+				db = getBeanDefinitionByType(bd, type);
 				
 				try {
 					f.setAccessible(true);
@@ -119,6 +153,15 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 				}
 			}
 		}
+	}
+
+	private BeanWrapper getBeanDefinitionByType(BeanDefinition bd, int type) {
+		BeanWrapper db;
+		if (type == INJECTBYNAME) 
+			db = beans.get(getBeanKey(bd.getName()));
+		else
+			db = beans.get(getBeanKey(bd.getBeanClass()));
+		return db;
 	}
 
 }
