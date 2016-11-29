@@ -43,7 +43,9 @@ public abstract class AbstractHandlerInterceptor implements HandlerInterceptor {
 	
 	public boolean isMatch(String expr) {
 		for (String exp : aspectExpression) {
-			if (exp.contains(Utils.getLastNameByPeriod(expr))) {
+			if (expr == null || expr.equals("")) {
+				return false;
+			} else if (exp.contains(Utils.getLastNameByPeriod(expr))) {
 				return true;
 			}
 		}

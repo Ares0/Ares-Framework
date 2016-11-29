@@ -11,6 +11,7 @@ import java.net.URLDecoder;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import frame.stereotype.Aspect;
 import frame.stereotype.Component;
@@ -45,17 +46,17 @@ public class FileResourceLoader implements ResourceLoader {
 	}
 	
 	@Override
-	public Map<String, BeanDefinition> loadResource(String packagePath) {
+	public Map<BeanKey, BeanDefinition> loadResource(String packagePath) {
 		return getBeanDefines(packagePath);
 	}
 	
 	/*
 	 * bean define
 	 */
-	public Map<String, BeanDefinition> getBeanDefines(String packagePath){  
+	public Map<BeanKey, BeanDefinition> getBeanDefines(String packagePath){  
 		Enumeration<URL> dirs;  
 		String packageDir = packagePath.replace('.', '/');  
-		Map<String, BeanDefinition> beanDefinitions = new HashMap<>();;
+		Map<BeanKey, BeanDefinition> beanDefinitions = new HashMap<>();;
         
         try {  
         	dirs = Utils.getCurrentClassLoader().getResources(packageDir);  
@@ -80,7 +81,7 @@ public class FileResourceLoader implements ResourceLoader {
     /*
      * class loading
      */
-	private void resolveClass(String packageName, String packagePath, Map<String, BeanDefinition> beanDefinitions){  
+	private void resolveClass(String packageName, String packagePath, Map<BeanKey, BeanDefinition> beanDefinitions){  
         File dir = new File(packagePath);  
         if (!dir.exists() || !dir.isDirectory()) {  
             return;  
@@ -106,16 +107,16 @@ public class FileResourceLoader implements ResourceLoader {
                 	Class<?> beanClass = Class.forName(classPath);
                 	classPathMapping.put(beanClass, classPath);
                 	
+                	BeanKey bk;
                 	String beanName = getComponentName(beanClass);
-                	if (beanName != null) {
-                		if (beanName.equals("")) {
-                			beanName = className;
-                		}
-                		BeanDefinition bean = new BeanDefinition();
-                		bean.setName(beanName);
-                		bean.setBeanClass(beanClass);
-                		beanDefinitions.put(beanName, bean);
-                	}
+            		bk = getBeanKey(beanClass, beanName);
+            		
+            		BeanDefinition bean = new BeanDefinition();
+            		bean.setName(beanName);
+            		bean.setBeanKey(bk);
+            		bean.setBeanClass(beanClass);
+            		
+            		beanDefinitions.put(bk, bean);
                 } catch (ClassNotFoundException e) {  
                     e.printStackTrace();  
                 }  
@@ -126,7 +127,7 @@ public class FileResourceLoader implements ResourceLoader {
 	/*
      * resolve bean definition
      */
-	private void resolveBeanDefinition(Map<String, BeanDefinition> beanDefinitions) {
+	private void resolveBeanDefinition(Map<BeanKey, BeanDefinition> beanDefinitions) {
 		resolveBeanFields(beanDefinitions);
 		resolveScope(beanDefinitions);
         resolveDependences(beanDefinitions);
@@ -151,7 +152,17 @@ public class FileResourceLoader implements ResourceLoader {
 			return null;
 		}
 	}
-	
+
+	private BeanKey getBeanKey(Class<?> beanClass, String beanName) {
+		BeanKey bk;
+		if (beanName == null || beanName.equals("")) {
+			bk = BeanKey.getBeanKey(beanClass);
+		} else {
+			bk = BeanKey.getBeanKey(beanName);
+		}
+		return bk;
+	}
+
 	private void release() {
 		pool = null;
 		classPathMapping.clear();
@@ -159,8 +170,8 @@ public class FileResourceLoader implements ResourceLoader {
 	}  
 	
 	// bean fields
-	private void resolveBeanFields(Map<String, BeanDefinition> beanDefinitions) {
-		for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
+	private void resolveBeanFields(Map<BeanKey, BeanDefinition> beanDefinitions) {
+		for (Entry<BeanKey, BeanDefinition> e : beanDefinitions.entrySet()) {
 			BeanDefinition bd = e.getValue();
 			Class<?> beanClass = bd.getBeanClass();
 			
@@ -173,8 +184,8 @@ public class FileResourceLoader implements ResourceLoader {
 	}
 	
 	// scope
-	private void resolveScope(Map<String, BeanDefinition> beanDefinitions) {
-		for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
+	private void resolveScope(Map<BeanKey, BeanDefinition> beanDefinitions) {
+		for (Entry<BeanKey, BeanDefinition> e : beanDefinitions.entrySet()) {
 			BeanDefinition bd = e.getValue();
 			Class<?> beanClass = bd.getBeanClass();
 			
@@ -186,8 +197,8 @@ public class FileResourceLoader implements ResourceLoader {
 	}
 	
 	// dependences
-	private void resolveDependences(Map<String, BeanDefinition> beanDefinitions) {
-		for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
+	private void resolveDependences(Map<BeanKey, BeanDefinition> beanDefinitions) {
+		for (Entry<BeanKey, BeanDefinition> e : beanDefinitions.entrySet()) {
 			BeanDefinition bd = e.getValue();
 			Class<?> beanClass = bd.getBeanClass();
 			
@@ -209,8 +220,8 @@ public class FileResourceLoader implements ResourceLoader {
 	}
 
 	// aspects
-	private void resolveAspects(Map<String, BeanDefinition> beanDefinitions) {
-		for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
+	private void resolveAspects(Map<BeanKey, BeanDefinition> beanDefinitions) {
+		for (Entry<BeanKey, BeanDefinition> e : beanDefinitions.entrySet()) {
 			BeanDefinition bd = e.getValue();
 			Class<?> beanClass = bd.getBeanClass();
 			
@@ -230,8 +241,8 @@ public class FileResourceLoader implements ResourceLoader {
 	}
 	
 	// controller path
-	private void resolveControllerPath(Map<String, BeanDefinition> beanDefinitions) {
-		for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
+	private void resolveControllerPath(Map<BeanKey, BeanDefinition> beanDefinitions) {
+		for (Entry<BeanKey, BeanDefinition> e : beanDefinitions.entrySet()) {
 			BeanDefinition bd = e.getValue();
 			Class<?> beanClass = bd.getBeanClass();
 			
@@ -268,9 +279,9 @@ public class FileResourceLoader implements ResourceLoader {
 	}
 
 	// controller method path
-	private void resolveControllerParameters(Map<String, BeanDefinition> beanDefinitions) {
+	private void resolveControllerParameters(Map<BeanKey, BeanDefinition> beanDefinitions) {
 		try {  
-			for (Map.Entry<String, BeanDefinition> e : beanDefinitions.entrySet()) {
+			for (Entry<BeanKey, BeanDefinition> e : beanDefinitions.entrySet()) {
 				BeanDefinition bd = e.getValue();
 				Class<?> beanClass = bd.getBeanClass();
 				

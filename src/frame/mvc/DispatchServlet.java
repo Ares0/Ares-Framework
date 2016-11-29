@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import frame.core.BeanDefinition;
+import frame.core.BeanKey;
 import frame.core.support.WebApplicationContext;
 
 public class DispatchServlet extends HttpServlet {
@@ -38,7 +39,7 @@ public class DispatchServlet extends HttpServlet {
 			if ((wc = (WebApplicationContext) sc.getAttribute(wcn)) != null) {
 				Boolean init = (Boolean) sc.getAttribute(CONTEXT_INIT);
 				if (init == null || init == false) {
-					Map<String, String> controllerMapping = new HashMap<>();
+					Map<String, BeanKey> controllerMapping = new HashMap<>();
 					
 					Map<String, Method> methodMapping = new HashMap<>();
 					Map<Method, Parameter[]> parameterMapping = new HashMap<>();
@@ -47,13 +48,13 @@ public class DispatchServlet extends HttpServlet {
 					Map<Method, String> viewType = new HashMap<>();
 					Map<Method, String> viewMapping = new HashMap<>();
 					
-					for (Map.Entry<String, BeanDefinition> e : wc.getBeanNameDefinition().entrySet()) {
+					for (Entry<BeanKey, BeanDefinition> e : wc.getBeanDefinition().entrySet()) {
 						BeanDefinition bd = e.getValue();
 						if (bd.isController()) {
 							// req
 							for (Map.Entry<String, Method> m : bd.getRequestMapping().entrySet()) {
 								methodMapping.put(m.getKey(), m.getValue());
-								controllerMapping.put(m.getKey(), bd.getName());
+								controllerMapping.put(m.getKey(), bd.getBeanKey());
 							}
 							// param type
 							for (Entry<Method, Parameter[]> m : bd.getParameterMapping().entrySet()) {
@@ -102,14 +103,14 @@ public class DispatchServlet extends HttpServlet {
 		String path = getRequestPath(req);
 		ServletContext sc = req.getSession().getServletContext();
 		
-		Map<String, String> controllerMapping = (Map<String, String>) sc.getAttribute(HandlerAdapter.CONTROLLER_MAPPING);
+		Map<String, BeanKey> controllerMapping = (Map<String, BeanKey>) sc.getAttribute(HandlerAdapter.CONTROLLER_MAPPING);
 		
-		String controllerName;
-		if ((controllerName = controllerMapping.get(path)) != null) {
+		BeanKey controllerKey;
+		if ((controllerKey = controllerMapping.get(path)) != null) {
 			WebApplicationContext wc = (WebApplicationContext) sc.getAttribute(WebApplicationContext.SERVLETCONTEXT_BEANFACTORY);
 			Object controller;
 			
-			if ((controller = wc.getBean(controllerName)) != null) {
+			if ((controller = wc.getBean(controllerKey)) != null) {
 				Map<String, Method> methodMapping = (Map<String, Method>) sc.getAttribute(HandlerAdapter.METHOD_MAPPING);
 				Method cm = methodMapping.get(path);
 				

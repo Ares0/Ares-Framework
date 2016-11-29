@@ -22,10 +22,7 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 
 	private Properties config;
 	
-	private Map<String, BeanDefinition> beanNameDefinition;
-	
-	// 持有相同的BeanDefinition地址
-	private Map<Class<?>, BeanDefinition> beanClassDefinition;
+	private Map<BeanKey, BeanDefinition> beanDefinition;
 	
 	private ResourceLoader loader;
 	
@@ -33,15 +30,10 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 	
 	private Map<BeanKey, BeanWrapper> beans;
 	
-	private final static int INJECTBYNAME = 1;
-	
-	private final static int INJECTBYTYPE = 2;
-	
 	public AbstractBeanFactory(String configLocation) {
 		synchronized (this) {
 			initConfig(configLocation);
 			loadBeanDefinition();
-			initBeanDefinitionClass();
 			
 			beans = new HashMap<>();
 			initFactoryBean();
@@ -50,12 +42,8 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 
 	protected abstract void initFactoryBean();
 
-	public Map<String, BeanDefinition> getBeanNameDefinition() {
-		return beanNameDefinition;
-	}
-
-	public Map<Class<?>, BeanDefinition> getBeanClassDefinition() {
-		return beanClassDefinition;
+	public Map<BeanKey, BeanDefinition> getBeanDefinition() {
+		return beanDefinition;
 	}
 
 	private void initConfig(String configLocation) {
@@ -75,39 +63,22 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 	
 	private void loadBeanDefinition() {
 		loader = new FileResourceLoader();
-		beanNameDefinition = loader.loadResource(config.getProperty(SCANPACKAGE));
-	}
-
-	private void initBeanDefinitionClass() {
-		beanClassDefinition = new HashMap<>();
-		for (Map.Entry<String, BeanDefinition> e : beanNameDefinition.entrySet()) {
-			BeanDefinition bd = e.getValue();
-			beanClassDefinition.put(bd.getBeanClass(), bd);
-		}
+		beanDefinition = loader.loadResource(config.getProperty(SCANPACKAGE));
 	}
 	
 	@Override
 	public Object getBean(String name) {
-		return this.getBean(getBeanKey(name));
+		return this.getBean(BeanKey.getBeanKey(name));
 	}
 	
 	@Override
 	public Object getBean(Class<?> beanClass) {
-		return this.getBean(getBeanKey(beanClass));
+		return this.getBean(BeanKey.getBeanKey(beanClass));
 	}
 	
-	protected Object getBean(BeanKey key) {
-		String name;
-		Class<?> beanClass;
+	public Object getBean(BeanKey key) {
 		BeanDefinition bd = null;
-		int type = INJECTBYNAME;
-		
-		if ((name = key.getName()) != null) {
-			bd = beanNameDefinition.get(name);
-		} else if ((beanClass = key.getBeanClass()) != null) {
-			type = INJECTBYTYPE;
-			bd = beanClassDefinition.get(beanClass);
-		}
+		bd = beanDefinition.get(key);
 		
 		if (bd == null) {
 			throw new IllegalArgumentException();
@@ -121,27 +92,20 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 			List<Class<?>> dbs = bd.getDependences();
 			if (dbs != null && dbs.size() > 0) {
 				for (Class<?> dc : dbs) {
-					getBean(beanClassDefinition.get(dc).getName());
+					getBean(beanDefinition.get(BeanKey.getBeanKey(dc)).getName());
 				}
-				doPropertyInject(bd, bw, type);
+				doPropertyInject(bd, bw, key);
 			}
 		} 
 		return bw.getBean();
 	}
-	
-	public BeanKey getBeanKey(String name) {
-		return new BeanKey(name);
-	}
-	
-	public BeanKey getBeanKey(Class<?> beanClass) {
-		return new BeanKey(beanClass);
-	}
 
-	private void doPropertyInject(BeanDefinition bd, BeanWrapper bw, int type) {
+	private void doPropertyInject(BeanDefinition bd, BeanWrapper bw, BeanKey key) {
 		for (Field f : bd.getResourceFields()) {
-			if ((bd = beanClassDefinition.get(f.getType())) != null) {
+			BeanKey bk = BeanKey.getBeanKey(f.getType());
+			if ((bd = beanDefinition.get(bk)) != null) {
 				BeanWrapper db;
-				db = getBeanDefinitionByType(bd, type);
+				db = beans.get(key);
 				
 				try {
 					f.setAccessible(true);
@@ -153,15 +117,6 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 				}
 			}
 		}
-	}
-
-	private BeanWrapper getBeanDefinitionByType(BeanDefinition bd, int type) {
-		BeanWrapper db;
-		if (type == INJECTBYNAME) 
-			db = beans.get(getBeanKey(bd.getName()));
-		else
-			db = beans.get(getBeanKey(bd.getBeanClass()));
-		return db;
 	}
 
 }

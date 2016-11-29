@@ -6,9 +6,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import frame.core.BeanDefinition;
 import frame.core.BeanFactory;
+import frame.core.BeanKey;
 import frame.core.BeanWrapper;
 import frame.utils.Utils;
 
@@ -16,29 +18,30 @@ public class DefaultFactoryBean implements FactoryBean {
 
 	private BeanFactory bf;
 	
-	private Map<String, HandlerInterceptor> interceptors;
+	private Map<BeanKey, HandlerInterceptor> interceptors;
 	
 	public DefaultFactoryBean(BeanFactory b) {
 		this.bf = b;
 		interceptors = new HashMap<>();
 	}
+	
 	/*
 	 * load interceptors
 	 */
 	public void initFactoryBean() {
-		for (Map.Entry<String, BeanDefinition> e : bf.getBeanNameDefinition().entrySet()) {
+		for (Entry<BeanKey, BeanDefinition> e : bf.getBeanDefinition().entrySet()) {
 			BeanDefinition bd = e.getValue();
 			if (bd.isAspect()) {
-				String hiName = bd.getName();
+				BeanKey hk = bd.getBeanKey();
 				List<String> exprs = bd.getAspectExpression();
-				HandlerInterceptor hi = (HandlerInterceptor) bf.getBean(hiName);
+				HandlerInterceptor hi = (HandlerInterceptor) bf.getBean(hk);
 				
 				if (exprs != null && exprs.size() > 0) {
 					hi.setAspectExpression(bd.getAspectExpression());
 				} else {
-					throw new IllegalArgumentException("±Ì¥Ô Ω¥ÌŒÛ");
+					throw new IllegalArgumentException();
 				}
-				interceptors.put(hiName, hi);
+				interceptors.put(hk, hi);
 			}
 		}
 	}
@@ -74,10 +77,13 @@ public class DefaultFactoryBean implements FactoryBean {
 		boolean order = false;
 		List<HandlerInterceptor> his = null;
 		
-		for (Map.Entry<String, HandlerInterceptor> e : interceptors.entrySet()) {
+		for (Entry<BeanKey, HandlerInterceptor> e : interceptors.entrySet()) {
 			HandlerInterceptor hi = e.getValue();
 			if (hi.isMatchClass(bd.getName())) {
-				if (bf.getBeanClassDefinition().get(hi.getClass()).getLevel() != 0) {
+				BeanKey bk = BeanKey.getBeanKey(hi.getClass());
+				Map<BeanKey, BeanDefinition> bds = bf.getBeanDefinition();
+				
+				if (bds.get(bk).getLevel() != 0) {
 					order = true;
 				}
 				if (his == null) {

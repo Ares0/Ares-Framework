@@ -14,37 +14,39 @@ public class BeanDefinition {
 	
 	private Class<?> clazz;
 	
+	private BeanKey beanKey;
+	
 	private boolean isSingleton;
 	
 	// resource
 	private List<Field> resourceFields;
 	
-	// ÒÀÀµclass
+	// ä¾èµ–class
 	private List<Class<?>> dependences;
 	
-	// ¼¶±ğ
+	// çº§åˆ«
 	private int level;
 	
 	private boolean isAspect;
 	
-	// ÇĞÃæ±í´ïÊ½
+	// åˆ‡é¢è¡¨è¾¾å¼
 	private List<String> aspectExpressions;
 	
 	private boolean isController;
 	
-	// ÇëÇóÂ·¾¶-Method»º´æ
+	// è¯·æ±‚è·¯å¾„-Methodç¼“å­˜
 	private Map<String, Method> requestMapping;
 	
-	// ·½·¨-·µ»ØÀàĞÍ
+	// æ–¹æ³•-è¿”å›ç±»å‹
 	private Map<Method, String> responseType;
 	
-	// ·½·¨-·µ»ØÊÓÍ¼
+	// æ–¹æ³•-è¿”å›è§†å›¾
 	private Map<Method, String> responseMapping;
 	
-	// ·½·¨-²ÎÊıÁĞ±í
+	// æ–¹æ³•-å‚æ•°åˆ—è¡¨
 	private Map<Method, Parameter[]> parameterMapping;
 	
-	// ·½·¨-²ÎÊıÃûÁĞ±í
+	// æ–¹æ³•-å‚æ•°ååˆ—è¡¨
 	private Map<Method, String[]> parameterNameMapping;
 	
 	// singleton
@@ -64,6 +66,14 @@ public class BeanDefinition {
 
 	public void setBeanClass(Class<?> clazz) {
 		this.clazz = clazz;
+	}
+
+	public BeanKey getBeanKey() {
+		return beanKey;
+	}
+
+	public void setBeanKey(BeanKey beanKey) {
+		this.beanKey = beanKey;
 	}
 
 	public boolean isSingleton() {

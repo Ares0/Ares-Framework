@@ -18,7 +18,15 @@ public class BeanKey {
 		this.name = name;
 		this.beanClass = beanClass;
 	}
-
+	
+	public static BeanKey getBeanKey(String name) {
+		return new BeanKey(name);
+	}
+	
+	public static BeanKey getBeanKey(Class<?> beanClass) {
+		return new BeanKey(beanClass);
+	}
+	
 	public String getName() {
 		return name;
 	}
@@ -48,10 +56,12 @@ public class BeanKey {
 	public boolean equals(Object obj) {
 		if (obj instanceof BeanKey) {
 			BeanKey bk = (BeanKey)obj;
+			
 			String bkName = bk.getName();
 			if (bkName != null && bkName.equals(this.name)){
 				return true;
 			}
+			
 			Class<?> bkClass = bk.getBeanClass();
 			if (bkClass != null && bkClass.equals(this.beanClass)) {
 				return true;

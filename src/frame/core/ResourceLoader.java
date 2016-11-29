@@ -4,6 +4,6 @@ import java.util.Map;
 
 public interface ResourceLoader {
 
-	Map<String, BeanDefinition> loadResource(String packagePath);
+	Map<BeanKey, BeanDefinition> loadResource(String packagePath);
 	
 }

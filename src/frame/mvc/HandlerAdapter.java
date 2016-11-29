@@ -8,11 +8,12 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import frame.core.BeanKey;
 import frame.core.support.WebApplicationContext;
 import frame.stereotype.Component;
 
 /**
- *  Ö§³ÖÆÕÍ¨²ÎÊý¡¢req¡¢repµÄ²ÎÊý×¢Èë¡£
+ *  Ö§ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½reqï¿½ï¿½repï¿½Ä²ï¿½ï¿½ï¿½×¢ï¿½ë¡£
  * */
 @Component
 public class HandlerAdapter {
@@ -25,7 +26,7 @@ public class HandlerAdapter {
 	
 	public static final String PARAMETER_NAME_MAPPING = "paramepterNameMapping";
 	
-	public static final String HANDLER_ADAPTER = "HandlerAdapter";
+	public static final BeanKey HANDLER_ADAPTER = BeanKey.getBeanKey(HandlerAdapter.class);
 
 	public Object handle(Object controller, Method cm, Parameter[] parameters, 
 			String[] parameterNames, HttpServletRequest req, HttpServletResponse rep,

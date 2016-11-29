@@ -10,8 +10,8 @@ public interface BeanFactory {
 	
 	Object getBean(Class<?> beanClass);
 	
-	Map<String, BeanDefinition> getBeanNameDefinition();
+	Object getBean(BeanKey beanKey);
 	
-	Map<Class<?>, BeanDefinition> getBeanClassDefinition();
+	Map<BeanKey, BeanDefinition> getBeanDefinition();
 	
 }
