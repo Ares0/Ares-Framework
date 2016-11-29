@@ -79,6 +79,7 @@ public class DefaultFactoryBean implements FactoryBean {
 		
 		for (Entry<BeanKey, HandlerInterceptor> e : interceptors.entrySet()) {
 			HandlerInterceptor hi = e.getValue();
+			
 			if (hi.isMatchClass(bd.getName())) {
 				BeanKey bk = BeanKey.getBeanKey(hi.getClass());
 				Map<BeanKey, BeanDefinition> bds = bf.getBeanDefinition();

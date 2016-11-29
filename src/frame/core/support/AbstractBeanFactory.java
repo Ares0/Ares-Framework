@@ -7,6 +7,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 
 import frame.aop.FactoryBean;
@@ -24,6 +25,9 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 	
 	private Map<BeanKey, BeanDefinition> beanDefinition;
 	
+	// 持有相同的BeanDefinition地址
+	private Map<Class<?>, BeanDefinition> beanClassDefinition;
+	
 	private ResourceLoader loader;
 	
 	protected FactoryBean factoryBean;
@@ -34,6 +38,7 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 		synchronized (this) {
 			initConfig(configLocation);
 			loadBeanDefinition();
+			initClassBeanDefinition();
 			
 			beans = new HashMap<>();
 			initFactoryBean();
@@ -65,6 +70,14 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 		loader = new FileResourceLoader();
 		beanDefinition = loader.loadResource(config.getProperty(SCANPACKAGE));
 	}
+
+	private void initClassBeanDefinition() {
+		beanClassDefinition = new HashMap<>();
+		for (Entry<BeanKey, BeanDefinition> e : beanDefinition.entrySet()) {
+			BeanDefinition bd = e.getValue();
+			beanClassDefinition.put(bd.getBeanClass(), bd);
+		}
+	}
 	
 	@Override
 	public Object getBean(String name) {
@@ -92,24 +105,26 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 			List<Class<?>> dbs = bd.getDependences();
 			if (dbs != null && dbs.size() > 0) {
 				for (Class<?> dc : dbs) {
-					getBean(beanDefinition.get(BeanKey.getBeanKey(dc)).getName());
+					BeanDefinition dbd = beanClassDefinition.get(dc);
+					getBean(dbd.getBeanKey());
 				}
-				doPropertyInject(bd, bw, key);
+				doPropertyInject(bd, bw);
 			}
 		} 
 		return bw.getBean();
 	}
 
-	private void doPropertyInject(BeanDefinition bd, BeanWrapper bw, BeanKey key) {
+	private void doPropertyInject(BeanDefinition bd, BeanWrapper bw) {
 		for (Field f : bd.getResourceFields()) {
-			BeanKey bk = BeanKey.getBeanKey(f.getType());
-			if ((bd = beanDefinition.get(bk)) != null) {
-				BeanWrapper db;
-				db = beans.get(key);
+			BeanDefinition dbd = beanClassDefinition.get(f.getType());
+			
+			if (beanClassDefinition.get(f.getType()) != null) {
+				BeanWrapper dbw;
+				dbw = beans.get(dbd.getBeanKey());
 				
 				try {
 					f.setAccessible(true);
-					f.set(bw.getInstance(), db.getBean());
+					f.set(bw.getInstance(), dbw.getBean());
 				} catch (IllegalArgumentException e) {
 					e.printStackTrace();
 				} catch (IllegalAccessException e) {

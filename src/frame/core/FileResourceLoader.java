@@ -205,13 +205,12 @@ public class FileResourceLoader implements ResourceLoader {
 			for (Field f : beanClass.getDeclaredFields()) {
 				Resource r;
 				if ((r = f.getAnnotation(Resource.class)) != null) {
-					String beanName;
-					if ((beanName = r.value()).equals("")) {
-						beanName = Utils.getLastNameByPeriod(f.getType().toString());
-					}
+					String beanName = r.value();
+					Class<?> dpClass = f.getType();
 					
 					BeanDefinition dp;   
-					if ((dp = beanDefinitions.get(beanName)) != null) {
+					BeanKey bk = getBeanKey(dpClass, beanName);
+					if ((dp = beanDefinitions.get(bk)) != null) {
 						bd.setDependences(dp.getBeanClass());
 					}
 				}

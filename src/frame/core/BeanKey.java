@@ -45,7 +45,7 @@ public class BeanKey {
 
 	@Override
 	public int hashCode() {
-		if (name == null) {
+		if (name == null || name.equals("")) {
 			return beanClass.hashCode();
 		} else {
 			return name.hashCode();
@@ -58,7 +58,7 @@ public class BeanKey {
 			BeanKey bk = (BeanKey)obj;
 			
 			String bkName = bk.getName();
-			if (bkName != null && bkName.equals(this.name)){
+			if (bkName != null && !bkName.equals("") && bkName.equals(this.name)){
 				return true;
 			}
 			
